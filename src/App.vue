@@ -1,51 +1,73 @@
 <template>
   <div id="app">
     <br>
-    <div class="container">
-      <div class="header clearfix">
-        <nav>
-          <ul class="nav nav-pills float-right">
-            <li class="nav-item">
-              <a class="nav-link active" href="#">Home <span class="sr-only">(current)</span></a>
-            </li>
-          </ul>
-        </nav>
-        <h3 class="text-muted">Project name</h3>
-      </div>
-
-      <div class="jumbotron">
-        <h1 class="display-3">Jumbotron heading</h1>
-        <p class="lead">Cras justo odio, dapibus ac facilisis in, egestas eget quam. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
-        <p><a class="btn btn-lg btn-success" href="#" role="button">Sign up today</a></p>
-      </div>
-
-      <div class="row marketing">
-        <div class="col-lg-6">
-          <h4>Subheading</h4>
-          <p>Donec id elit non mi porta gravida at eget metus. Maecenas faucibus mollis interdum.</p>
-
-          <h4>Subheading</h4>
-          <p>Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Cras mattis consectetur purus sit amet fermentum.</p>
-
-          <h4>Subheading</h4>
-          <p>Maecenas sed diam eget risus varius blandit sit amet non magna.</p>
+        <div class="container">
+        <div class="header clearfix">
+        <h3 class="text-muted">Sistema de Votacion Mexico</h3>
         </div>
 
-        <div class="col-lg-6">
-          <h4>Subheading</h4>
-          <p>Donec id elit non mi porta gravida at eget metus. Maecenas faucibus mollis interdum.</p>
-
-          <h4>Subheading</h4>
-          <p>Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Cras mattis consectetur purus sit amet fermentum.</p>
-
-          <h4>Subheading</h4>
-          <p>Maecenas sed diam eget risus varius blandit sit amet non magna.</p>
+        <div class="jumbotron">
+        <h1 class="display-3">Tu voto vale.</h1>
+        <p class="lead">Este es un sistema de votacion. Usando technologia de blockchain para no confiar la verasidad de los votos a un tercero.</p>
         </div>
-      </div>
 
-      <footer class="footer">
+        <div class="row">
+            <b-table bordered striped hover :items="candidatos"></b-table>
+        </div>
+
+        <br>
+        <div class="row">
+            <div class="col-md-12">
+                <b-card title="Votar por Candidato">
+                    <br>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <b-form-select v-model="candidatoSeleccionado" :options="seleccionCandadatos" class="mb-3">
+                            </b-form-select>
+                        </div>
+                        <div class="col-md-6">
+                            <b-input-group>
+                                <b-form-input placeholder="Numero de Votos" type="number" min="0"></b-form-input>
+                                <b-input-group-button>
+                                    <b-btn variant="primary">Votar</b-btn>
+                                </b-input-group-button>
+                            </b-input-group>
+                        </div>
+
+                    </div>
+                </b-card>
+            </div>
+        </div>
+
+        <div class="row marketing">
+            <div class="col-md-6">
+                <h4>Tokens de votacion</h4>
+                <br>
+                <b-table bordered striped hover :items="tokens"></b-table>
+            </div>
+            <div class="col-md-6">
+                <br>
+                <br>
+                <b-card title="Comprar Votos">
+                <p class="card-text">
+                    Nunca dijimos que este sistema de votacion seria democratico.
+                    Los votos se compran.
+                </p>
+                <b-input-group>
+                    <b-form-input type="number" min="0"></b-form-input>
+                    <b-input-group-button>
+                      <b-btn variant="success">Comprar</b-btn>
+                    </b-input-group-button>
+                  </b-input-group>
+            </b-card>
+            </div>
+        </div>
+
+
+        <br>
+        <footer class="footer">
         <p>&copy; Company 2017</p>
-      </footer>
+        </footer>
 
     </div> <!-- /container -->
   </div>
@@ -56,7 +78,24 @@ export default {
   name: 'app',
   data () {
     return {
-      msg: 'Welcome to Your Vue.js App'
+        candidatoSeleccionado: null,
+        seleccionCandadatos: [
+            { value: null, text: 'Selecciona tu candidato' },
+            { value: 'Margarita Zavala', text: 'Margarita Zavala' },
+            { value: 'Luis Videgaray', text: 'Luis Videgaray' },
+            { value: 'Andres Manuel Lopez Obrador (PEJE)', text: 'Andres Manuel Lopez Obrador (PEJE)' },
+        ],
+        candidatos: [
+            { nombre: 'Margarita Zavala', votos: 1 },
+            { nombre: 'Luis Videgaray', votos: 4 },
+            { nombre: 'Andres Manuel Lopez Obrador (PEJE)', votos: 3 },
+        ],
+        tokens: [
+            { informacion: 'Votos a la venta', valor: 1 },
+            { informacion: 'Total Votos Vendidos', valor: 4 },
+            { informacion: 'Precio Por Voto', valor: 3 },
+            { informacion: 'Total Dinero Recolectado', valor: 3 },
+        ],
     }
   }
 }
