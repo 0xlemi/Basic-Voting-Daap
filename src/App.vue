@@ -12,7 +12,7 @@
         </div>
 
         <div class="row">
-            <b-table bordered striped hover :items="candidatos"></b-table>
+            <b-table bordered hover :items="candidatos"></b-table>
         </div>
 
         <br>
@@ -27,9 +27,9 @@
                         </div>
                         <div class="col-md-6">
                             <b-input-group>
-                                <b-form-input placeholder="Numero de Votos" type="number" min="0"></b-form-input>
+                                <b-form-input v-model="tokensVotar" placeholder="Numero de Votos" type="number" min="0"></b-form-input>
                                 <b-input-group-button>
-                                    <b-btn variant="primary">Votar</b-btn>
+                                    <b-btn variant="primary" @click="votar">Votar</b-btn>
                                 </b-input-group-button>
                             </b-input-group>
                         </div>
@@ -43,7 +43,7 @@
             <div class="col-md-6">
                 <h4>Tokens de votacion</h4>
                 <br>
-                <b-table bordered striped hover :items="tokens"></b-table>
+                <b-table bordered hover :items="tokens"></b-table>
             </div>
             <div class="col-md-6">
                 <br>
@@ -54,9 +54,9 @@
                     Los votos se compran.
                 </p>
                 <b-input-group>
-                    <b-form-input type="number" min="0"></b-form-input>
+                    <b-form-input v-model="votosComprar" type="number" min="0"></b-form-input>
                     <b-input-group-button>
-                      <b-btn variant="success">Comprar</b-btn>
+                      <b-btn variant="success" @click="comprar">Comprar</b-btn>
                     </b-input-group-button>
                   </b-input-group>
             </b-card>
@@ -74,30 +74,138 @@
 </template>
 
 <script>
+// Import libraries we need.
+import { default as Web3} from 'web3';
+import { default as contract } from 'truffle-contract';
+
+import voting_artifacts from '../build/contracts/Voting.json';
+
+
+
 export default {
   name: 'app',
   data () {
-    return {
-        candidatoSeleccionado: null,
-        seleccionCandadatos: [
-            { value: null, text: 'Selecciona tu candidato' },
-            { value: 'Margarita Zavala', text: 'Margarita Zavala' },
-            { value: 'Luis Videgaray', text: 'Luis Videgaray' },
-            { value: 'Andres Manuel Lopez Obrador (PEJE)', text: 'Andres Manuel Lopez Obrador (PEJE)' },
-        ],
-        candidatos: [
-            { nombre: 'Margarita Zavala', votos: 1 },
-            { nombre: 'Luis Videgaray', votos: 4 },
-            { nombre: 'Andres Manuel Lopez Obrador (PEJE)', votos: 3 },
-        ],
-        tokens: [
-            { informacion: 'Votos a la venta', valor: 1 },
-            { informacion: 'Total Votos Vendidos', valor: 4 },
-            { informacion: 'Precio Por Voto', valor: 3 },
-            { informacion: 'Total Dinero Recolectado', valor: 3 },
-        ],
+        return {
+            voting: null,
+            candidatoSeleccionado: null,
+            precioPorVoto: null,
+            votosComprar: null,
+            tokensVotar: null,
+
+            seleccionCandadatos: [
+                { value: null, text: 'Selecciona tu candidato' },
+                { value: null, text: null },
+                { value: null, text: null },
+                { value: null, text: null },
+            ],
+            candidatos: [
+                { nombre: null, votos: null },
+                { nombre: null, votos: null },
+                { nombre: null, votos: null },
+            ],
+            tokens: [
+                { informacion: 'Votos en Existencia', valor: null },
+                { informacion: 'Votos Vendidos', valor: null },
+                { informacion: 'Precio Por Voto', valor: null },
+                { informacion: 'Total Dinero Recolectado', valor: null },
+            ],
+        }
+    },
+    methods: {
+        votar(){
+            let vue = this;
+            this.voting.deployed().then(function(contractInstance) {
+                let instance = contractInstance;
+                console.log(web3.eth.accounts[0]);
+                instance.voteForCandidate(vue.candidatoSeleccionado, parseInt(vue.tokensVotar), {gas: 140000, from: web3.eth.accounts[0]}).then(function() {
+                    // let nombre = vue.candidatos[vue.candidatoSeleccionado].nombre;
+                    // instance.totalVotesFor.call(nombre).then(function(votos) {
+                    //     vue.candidatos[vue.candidatoSeleccionado].votos = votos;
+                    // });
+                });
+            });
+        },
+        comprar(){
+            let vue = this;
+            this.voting.deployed().then(function(contractInstance) {
+                let instance = contractInstance;
+                let precio = vue.votosComprar * vue.precioPorVoto;
+                instance.buy({value: web3.toWei(precio, 'ether'), from: web3.eth.accounts[0]}).then(function(v) {
+                    vue.votosComprar = "";
+
+                    // Updatear total disponibles
+                    instance.totalTokens().then(function(v) {
+                        vue.tokens[0].valor = v.toString();
+                    });
+                    // Updatear total vendidos
+                    instance.tokensSold.call().then(function(v) {
+                        vue.tokens[1].valor = v.toString();
+                    });
+                    // Updatear el total balance de la cueta maestra
+                    web3.eth.getBalance(instance.address, function(error, result) {
+                        let balance = web3.fromWei(result.toString());
+                        vue.tokens[3].valor = balance + " Ether";
+                    });
+
+                });
+            });
+        },
+        agregarCandidatos(){
+            let vue = this;
+            this.voting.deployed().then(function(contractInstance) {
+                let instance = contractInstance;
+                instance.allCandidates.call().then(function(candidateArray) {
+                    for(let i=0; i < candidateArray.length; i++) {
+                        /* We store the candidate names as bytes32 on the blockchain. We use the
+                         * handy toUtf8 method to convert from bytes32 to string
+                         */
+                        let nombre = web3.toUtf8(candidateArray[i]);
+                        vue.candidatos[i].nombre = nombre;
+                        instance.totalVotesFor.call(nombre).then(function(votos) {
+                            vue.candidatos[i].votos = votos;
+                        });
+
+                        vue.seleccionCandadatos[i+1].text = web3.toUtf8(candidateArray[i]);
+                        vue.seleccionCandadatos[i+1].value = i;
+                    }
+                });
+            });
+        },
+        agregarInfoTokens(){
+            let vue = this;
+            this.voting.deployed().then(function(contractInstance) {
+                contractInstance.totalTokens().then(function(v) {
+                    vue.tokens[0].valor = v.toString();
+                });
+                contractInstance.tokensSold.call().then(function(v) {
+                    vue.tokens[1].valor = v.toString();
+                });
+                contractInstance.tokenPrice().then(function(v) {
+                    vue.precioPorVoto = parseFloat(web3.fromWei(v.toString()));
+                    vue.tokens[2].valor = vue.precioPorVoto + " Ether";
+                });
+                web3.eth.getBalance(contractInstance.address, function(error, result) {
+                    let balance = web3.fromWei(result.toString());
+                    vue.tokens[3].valor = balance + " Ether";
+                });
+            });
+        }
+    },
+    mounted(){
+        this.voting = contract(voting_artifacts);
+        if (typeof web3 !== 'undefined') {
+            console.warn("Using web3 detected from external source like Metamask")
+            // Use Mist/MetaMask's provider
+            window.web3 = new Web3(web3.currentProvider);
+        } else {
+            console.warn("No web3 detected. Falling back to http://localhost:8545. You should remove this fallback when you deploy live, as it's inherently insecure. Consider switching to Metamask for development. More info here: http://truffleframework.com/tutorials/truffle-and-metamask");
+            // fallback - use your fallback strategy (local node / hosted node + in-dapp id mgmt / fail)
+            window.web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:8545"));
+        }
+        this.voting.setProvider(web3.currentProvider);
+        this.agregarCandidatos();
+        this.agregarInfoTokens();
     }
-  }
 }
 </script>
 

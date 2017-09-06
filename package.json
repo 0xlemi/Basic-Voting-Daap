@@ -23,8 +23,10 @@
     "node-sass": "^4.5.0",
     "sass-loader": "^5.0.1",
     "style-loader": "^0.18.2",
+    "truffle-contract": "^2.0.5",
     "vue-loader": "^12.1.0",
     "vue-template-compiler": "^2.3.3",
+    "web3": "^0.18.4",
     "webpack": "^2.6.1",
     "webpack-dev-server": "^2.4.5"
   }
