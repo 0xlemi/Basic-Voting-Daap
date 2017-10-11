@@ -116,12 +116,10 @@ export default {
             let vue = this;
             this.voting.deployed().then(function(contractInstance) {
                 let instance = contractInstance;
-                console.log(web3.eth.accounts[0]);
                 instance.voteForCandidate(vue.candidatoSeleccionado, parseInt(vue.tokensVotar), {gas: 140000, from: web3.eth.accounts[0]}).then(function() {
-                    // let nombre = vue.candidatos[vue.candidatoSeleccionado].nombre;
-                    // instance.totalVotesFor.call(nombre).then(function(votos) {
-                    //     vue.candidatos[vue.candidatoSeleccionado].votos = votos;
-                    // });
+                    instance.totalVotesFor.call(vue.candidatoSeleccionado).then(function(votos) {
+                        vue.candidatos[vue.candidatoSeleccionado].votos = votos;
+                    });
                 });
             });
         },
@@ -131,21 +129,16 @@ export default {
                 let instance = contractInstance;
                 let precio = vue.votosComprar * vue.precioPorVoto;
                 instance.buy({value: web3.toWei(precio, 'ether'), from: web3.eth.accounts[0]}).then(function(v) {
-                    vue.votosComprar = "";
 
-                    // Updatear total disponibles
-                    instance.totalTokens().then(function(v) {
-                        vue.tokens[0].valor = v.toString();
-                    });
                     // Updatear total vendidos
-                    instance.tokensSold.call().then(function(v) {
-                        vue.tokens[1].valor = v.toString();
-                    });
+                    vue.tokens[1].valor = parseInt(vue.tokens[1].valor) + parseInt(vue.votosComprar);
                     // Updatear el total balance de la cueta maestra
                     web3.eth.getBalance(instance.address, function(error, result) {
                         let balance = web3.fromWei(result.toString());
                         vue.tokens[3].valor = balance + " Ether";
                     });
+
+                    vue.votosComprar = "";
 
                 });
             });
@@ -161,11 +154,11 @@ export default {
                          */
                         let nombre = web3.toUtf8(candidateArray[i]);
                         vue.candidatos[i].nombre = nombre;
-                        instance.totalVotesFor.call(nombre).then(function(votos) {
+                        instance.totalVotesFor.call(i).then(function(votos) {
                             vue.candidatos[i].votos = votos;
                         });
 
-                        vue.seleccionCandadatos[i+1].text = web3.toUtf8(candidateArray[i]);
+                        vue.seleccionCandadatos[i+1].text = nombre;
                         vue.seleccionCandadatos[i+1].value = i;
                     }
                 });

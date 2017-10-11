@@ -27,7 +27,7 @@ contract Voting {
    instead to store the list of candidates
    */
 
-  mapping (bytes32 => uint) public votesReceived;
+  mapping (uint => uint) public votesReceived;
 
   bytes32[] public candidateList;
 
@@ -45,8 +45,8 @@ contract Voting {
     tokenPrice = pricePerToken;
   }
 
-  function totalVotesFor(bytes32 candidate) constant returns (uint) {
-    return votesReceived[candidate];
+  function totalVotesFor(uint indexOfCandidate) constant returns (uint) {
+    return votesReceived[indexOfCandidate];
   }
 
   /* Instead of just taking the candidate name as an argument, we now also
@@ -67,7 +67,7 @@ contract Voting {
     uint availableTokens = voterInfo[msg.sender].tokensBought - totalTokensUsed(voterInfo[msg.sender].tokensUsedPerCandidate);
     if (availableTokens < votesInTokens) throw;
 
-    votesReceived[candidate] += votesInTokens;
+    votesReceived[index] += votesInTokens;
 
     // Store how many tokens were used for this candidate
     voterInfo[msg.sender].tokensUsedPerCandidate[index] += votesInTokens;
@@ -80,15 +80,6 @@ contract Voting {
       totalUsedTokens += _tokensUsedPerCandidate[i];
     }
     return totalUsedTokens;
-  }
-
-  function indexOfCandidate(bytes32 candidate) constant returns (uint) {
-    for(uint i = 0; i < candidateList.length; i++) {
-      if (candidateList[i] == candidate) {
-        return i;
-      }
-    }
-    return uint(-1);
   }
 
   /* This function is used to purchase the tokens. Note the keyword 'payable'
