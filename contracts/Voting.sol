@@ -101,8 +101,13 @@ contract Voting {
     return totalTokens - balanceTokens;
   }
 
-  function voterDetails(address user) constant returns (uint, uint[]) {
-    return (voterInfo[user].tokensBought, voterInfo[user].tokensUsedPerCandidate);
+  /*function voterTokensAvailableTokens() constant returns (uint) {
+    return voterInfo[msg.sender].tokensBought - totalTokensUsed(voterInfo[msg.sender].tokensUsedPerCandidate);
+  }*/
+
+  function voterDetails(address user) constant returns (uint[], uint) {
+    uint tokenBalance = voterInfo[user].tokensBought - totalTokensUsed(voterInfo[user].tokensUsedPerCandidate);
+    return (voterInfo[user].tokensUsedPerCandidate, tokenBalance);
   }
 
   /* All the ether sent by voters who purchased the tokens is in this

@@ -58,7 +58,14 @@
                     <b-input-group-button>
                       <b-btn variant="success" @click="comprar">Comprar</b-btn>
                     </b-input-group-button>
-                  </b-input-group>
+                </b-input-group>
+                <br>
+                <div class="form-group row">
+                    <label class="col-sm-6 col-form-label">Votos que Poseo: </label>
+                    <div class="col-sm-6">
+                      <input type="text" v-model="userTokensOwned" class="form-control" readonly>
+                    </div>
+                </div>
             </b-card>
             </div>
         </div>
@@ -92,6 +99,12 @@ export default {
             votosComprar: null,
             tokensVotar: null,
 
+            userCandidateVotes: [],
+            userTokensOwned: null,
+
+            detailsCandidateVotes: [],
+            detailsTokensOwned: null,
+
             seleccionCandadatos: [
                 { value: null, text: 'Selecciona tu candidato' },
                 { value: null, text: null },
@@ -104,8 +117,9 @@ export default {
                 { nombre: null, votos: null },
             ],
             tokens: [
-                { informacion: 'Votos en Existencia', valor: null },
-                { informacion: 'Votos Vendidos', valor: null },
+                { informacion: 'Total Votos Posibles', valor: null },
+                { informacion: 'Total Votos Disponibles', valor: null },
+                { informacion: 'Total Votos Vendidos', valor: null },
                 { informacion: 'Precio Por Voto', valor: null },
                 { informacion: 'Total Dinero Recolectado', valor: null },
             ],
@@ -119,6 +133,7 @@ export default {
                 instance.voteForCandidate(vue.candidatoSeleccionado, parseInt(vue.tokensVotar), {gas: 140000, from: web3.eth.accounts[0]}).then(function() {
                     instance.totalVotesFor.call(vue.candidatoSeleccionado).then(function(votos) {
                         vue.candidatos[vue.candidatoSeleccionado].votos = votos;
+                        vue.userTokensOwned -= votos;
                     });
                 });
             });
@@ -131,15 +146,17 @@ export default {
                 instance.buy({value: web3.toWei(precio, 'ether'), from: web3.eth.accounts[0]}).then(function(v) {
 
                     // Updatear total vendidos
-                    vue.tokens[1].valor = parseInt(vue.tokens[1].valor) + parseInt(vue.votosComprar);
+                    vue.tokens[1].valor = parseInt(vue.tokens[1].valor) - parseInt(vue.votosComprar);
+                    vue.tokens[2].valor = parseInt(vue.tokens[2].valor) + parseInt(vue.votosComprar);
                     // Updatear el total balance de la cueta maestra
                     web3.eth.getBalance(instance.address, function(error, result) {
                         let balance = web3.fromWei(result.toString());
-                        vue.tokens[3].valor = balance + " Ether";
+                        vue.tokens[4].valor = balance + " Ether";
                     });
 
-                    vue.votosComprar = "";
+                    vue.userTokensOwned += parseInt(vue.votosComprar);
 
+                    vue.votosComprar = "";
                 });
             });
         },
@@ -170,16 +187,39 @@ export default {
                 contractInstance.totalTokens().then(function(v) {
                     vue.tokens[0].valor = v.toString();
                 });
-                contractInstance.tokensSold.call().then(function(v) {
+                contractInstance.balanceTokens().then(function(v) {
                     vue.tokens[1].valor = v.toString();
+                });
+                contractInstance.tokensSold.call().then(function(v) {
+                    vue.tokens[2].valor = v.toString();
                 });
                 contractInstance.tokenPrice().then(function(v) {
                     vue.precioPorVoto = parseFloat(web3.fromWei(v.toString()));
-                    vue.tokens[2].valor = vue.precioPorVoto + " Ether";
+                    vue.tokens[3].valor = vue.precioPorVoto + " Ether";
                 });
                 web3.eth.getBalance(contractInstance.address, function(error, result) {
                     let balance = web3.fromWei(result.toString());
-                    vue.tokens[3].valor = balance + " Ether";
+                    vue.tokens[4].valor = balance + " Ether";
+                });
+            });
+        },
+        getDetails(address){
+            let vue = this;
+            this.voting.deployed().then(function(contractInstance) {
+                let instance = contractInstance;
+                instance.voterDetails.call(address).then(function(result) {
+                    vue.detailsCandidateVotes = result[0];
+                    vue.detailsTokensOwned = parseInt(result[1]);
+                });
+            });
+        },
+        getCurrentUserDetails(){
+            let vue = this;
+            this.voting.deployed().then(function(contractInstance) {
+                let instance = contractInstance;
+                instance.voterDetails.call(web3.eth.accounts[0]).then(function(result) {
+                    vue.userCandidateVotes = result[0];
+                    vue.userTokensOwned = parseInt(result[1]);
                 });
             });
         }
@@ -198,6 +238,7 @@ export default {
         this.voting.setProvider(web3.currentProvider);
         this.agregarCandidatos();
         this.agregarInfoTokens();
+        this.getCurrentUserDetails();
     }
 }
 </script>
