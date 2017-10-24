@@ -70,6 +70,36 @@
             </div>
         </div>
 
+        <div class="row marketing">
+            <div class="col-md-12">
+                <b-card title="Informacion sobre otros votantes">
+                <br>
+                <b-input-group>
+                    <b-form-input v-model="searchAddress" type="text" placeholder="Public Address" min="0"></b-form-input>
+                    <b-input-group-button>
+                      <b-btn variant="success" @click="getDetails">Search</b-btn>
+                    </b-input-group-button>
+                </b-input-group>
+
+                <br>
+                <div v-if="found">
+                    <div class="form-group row">
+                        <label class="col-sm-6 col-form-label">Votos sin utilizar: </label>
+                        <div class="col-sm-6">
+                          <input type="text" v-model="detailsTokensOwned" class="form-control" readonly>
+                        </div>
+                    </div>
+                    <br>
+                    <b-table bordered hover :items="detailsCandidatos"></b-table>
+                </div>
+                <div v-else>
+                    <br>
+                    <b-alert variant="warning" show>Address Not Found</b-alert>
+                </div>
+            </b-card>
+            </div>
+        </div>
+
 
         <br>
         <footer class="footer">
@@ -98,12 +128,12 @@ export default {
             precioPorVoto: null,
             votosComprar: null,
             tokensVotar: null,
+            found: false,
 
-            userCandidateVotes: [],
             userTokensOwned: null,
-
-            detailsCandidateVotes: [],
             detailsTokensOwned: null,
+
+            searchAddress: null,
 
             seleccionCandadatos: [
                 { value: null, text: 'Selecciona tu candidato' },
@@ -112,6 +142,11 @@ export default {
                 { value: null, text: null },
             ],
             candidatos: [
+                { nombre: null, votos: null },
+                { nombre: null, votos: null },
+                { nombre: null, votos: null },
+            ],
+            detailsCandidatos: [
                 { nombre: null, votos: null },
                 { nombre: null, votos: null },
                 { nombre: null, votos: null },
@@ -132,8 +167,9 @@ export default {
                 let instance = contractInstance;
                 instance.voteForCandidate(vue.candidatoSeleccionado, parseInt(vue.tokensVotar), {gas: 140000, from: web3.eth.accounts[0]}).then(function() {
                     instance.totalVotesFor.call(vue.candidatoSeleccionado).then(function(votos) {
-                        vue.candidatos[vue.candidatoSeleccionado].votos = votos;
-                        vue.userTokensOwned -= votos;
+                        vue.candidatos[vue.candidatoSeleccionado].votos = parseInt(vue.candidatos[vue.candidatoSeleccionado].votos) + parseInt(vue.tokensVotar);
+                        vue.userTokensOwned -= parseInt(vue.tokensVotar);
+                        vue.tokensVotar = "";
                     });
                 });
             });
@@ -171,6 +207,7 @@ export default {
                          */
                         let nombre = web3.toUtf8(candidateArray[i]);
                         vue.candidatos[i].nombre = nombre;
+                        vue.detailsCandidatos[i].nombre = nombre;
                         instance.totalVotesFor.call(i).then(function(votos) {
                             vue.candidatos[i].votos = votos;
                         });
@@ -203,13 +240,21 @@ export default {
                 });
             });
         },
-        getDetails(address){
+        getDetails(){
             let vue = this;
             this.voting.deployed().then(function(contractInstance) {
                 let instance = contractInstance;
-                instance.voterDetails.call(address).then(function(result) {
-                    vue.detailsCandidateVotes = result[0];
-                    vue.detailsTokensOwned = parseInt(result[1]);
+                instance.voterDetails.call(vue.searchAddress).then(function(result) {
+                    try {
+                        for(let i=0; i < vue.detailsCandidatos.length; i++) {
+                            vue.detailsCandidatos[i].votos = result[0][i].c[0];
+                        }
+                        vue.detailsTokensOwned = parseInt(result[1]);
+                        vue.found = true;
+                    }catch(err){
+                        vue.found = false;
+                    }
+                    // 0x5A476a00dda77914F8960b7336DEbf7b1dc141e1
                 });
             });
         },
